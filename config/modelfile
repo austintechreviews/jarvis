@@ -1,0 +1,12 @@
+FROM qwen2.5-coder:3b
+
+# Temperature (0.0-1.0, lower = more focused)
+PARAMETER temperature 0.3
+
+# Context window (tokens)
+PARAMETER num_ctx 8192
+
+# Top-p sampling (0.0-1.0)
+PARAMETER top_p 0.9
+
+# System prompt will be set programmatically
