@@ -28,6 +28,7 @@ from tools.desktop_control import DesktopController
 from tools.app_launcher import ApplicationLauncher
 from modules.voice_assistant import VoiceAssistant
 from modules.plugin_system import PluginManager
+from modules.llm_tool_router import LLMToolRouter, LLMToolExecutor
 
 # Initialize rich console for better output
 console = Console()
@@ -60,6 +61,10 @@ class JARVIS:
         
         # Plugin manager
         self.plugin_manager = None
+        
+        # LLM tool router
+        self.llm_router = None
+        self.tool_executor = None
         
         self.setup_directories()
         self.setup_components()
@@ -151,6 +156,20 @@ class JARVIS:
             logger.warning(f"Plugin system initialization failed: {e}")
             self.plugin_manager = None
             console.print("[yellow]⚠ Plugin system unavailable[/yellow]")
+        
+        # LLM Tool Router (after plugins are loaded)
+        try:
+            self.llm_router = LLMToolRouter(
+                llm_client=interpreter,
+                plugin_manager=self.plugin_manager
+            )
+            self.tool_executor = LLMToolExecutor(jarvis_instance=self)
+            console.print("✓ LLM tool router ready")
+        except Exception as e:
+            logger.warning(f"LLM tool router initialization failed: {e}")
+            self.llm_router = None
+            self.tool_executor = None
+            console.print("[yellow]⚠ LLM tool router unavailable[/yellow]")
         
     def load_config(self):
         """Load user configuration"""
@@ -671,25 +690,19 @@ For tool usage, output JSON on a separate line:
     
     def process_command(self, user_input: str) -> str:
         """
-        Main command processing with plugin tool detection
+        Process command with LLM-powered routing
         
         FLOW:
-        1. Check plugin tools first
-        2. Check compound commands
-        3. Route to appropriate tool
-        4. Return result
+        1. Add to conversation history
+        2. Check for compound commands
+        3. If simple: Use LLM router to choose tool
+        4. Execute chosen tool
+        5. Return result
         """
         # Log conversation
         self.log_conversation("user", user_input)
         
-        # NEW: Check if any plugin tool should handle this FIRST
-        plugin_result = self._try_plugin_tools(user_input)
-        if plugin_result:
-            # Plugin handled it
-            self.log_conversation("assistant", plugin_result)
-            return plugin_result
-        
-        # Check for compound commands
+        # Check compound commands FIRST (multi-step)
         compound_steps = self.parse_compound_command(user_input)
         
         if compound_steps:
@@ -721,37 +734,46 @@ For tool usage, output JSON on a separate line:
             final_result = "\n\n".join([f"Step {i+1}: {r}" for i, r in enumerate(results)])
             
         else:
-            # SINGLE-STEP EXECUTION
-            routing = self.route_command(user_input)
-            console.print(f"[dim]Routing to: {routing['tool']} ({routing['reason']})[/dim]")
+            # SINGLE-STEP: Use LLM routing
+            console.print("[dim]Routing with LLM...[/dim]")
             
-            # Execute based on routing
-            if routing["tool"] == "web_search":
-                final_result = self.execute_web_search(user_input)
-            elif routing["tool"] == "browser":
-                final_result = self.execute_browser_task(user_input)
-            elif routing["tool"] == "browser_use":
-                final_result = self.execute_browser_use_task(user_input)
-            elif routing["tool"] == "files":
-                final_result = self.execute_file_operation(user_input)
-            elif routing["tool"] == "desktop":
-                final_result = self.execute_desktop_task(user_input)
-            elif routing["tool"] == "app_launcher":
-                final_result = self.execute_app_launch(user_input)
-            elif routing["tool"] == "terminal":
-                final_result = self.execute_terminal_command(user_input)
-            else:
-                # Complex task - LLM with full context
-                system_prompt = self.create_system_prompt()
-                llm_response = self.llm_chat(user_input, system_prompt)
+            # Get routing decision from LLM
+            if self.llm_router:
+                routing = self.llm_router.route(user_input)
                 
-                # Check if LLM wants to use a tool
-                tool_call = self.parse_tool_call(llm_response)
-                if tool_call:
-                    console.print(f"[dim]Tool call detected: {tool_call.get('tool')}[/dim]")
-                    final_result = self.execute_tool(tool_call)
+                # Display routing decision
+                tool_name = routing.get("tool", "none")
+                reasoning = routing.get("reasoning", "No reasoning")
+                console.print(f"[dim]Tool selected: {tool_name} ({reasoning})[/dim]")
+                
+                # Store original command in routing (for fallback)
+                routing["original_command"] = user_input
+                
+                # Execute the tool
+                final_result = self.tool_executor.execute(routing)
+            else:
+                # Fallback to old method if router not available
+                routing = self.route_command(user_input)
+                console.print(f"[dim]Routing to: {routing['tool']} ({routing['reason']})[/dim]")
+                
+                # Execute based on routing (existing logic)
+                if routing["tool"] == "web_search":
+                    final_result = self.execute_web_search(user_input)
+                elif routing["tool"] == "browser":
+                    final_result = self.execute_browser_task(user_input)
+                elif routing["tool"] == "browser_use":
+                    final_result = self.execute_browser_use_task(user_input)
+                elif routing["tool"] == "files":
+                    final_result = self.execute_file_operation(user_input)
+                elif routing["tool"] == "desktop":
+                    final_result = self.execute_desktop_task(user_input)
+                elif routing["tool"] == "app_launcher":
+                    final_result = self.execute_app_launch(user_input)
+                elif routing["tool"] == "terminal":
+                    final_result = self.execute_terminal_command(user_input)
                 else:
-                    final_result = llm_response
+                    system_prompt = self.create_system_prompt()
+                    final_result = self.llm_chat(user_input, system_prompt)
         
         # Add assistant response to history
         self.conversation_history.append({"role": "assistant", "content": str(final_result)})
