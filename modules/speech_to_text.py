@@ -29,14 +29,14 @@ class SpeechToText:
     def __init__(
         self,
         model_size: str = "tiny",
-        language: str = "en-GB"  # UK English accent
+        language: str = "en"  # English (works for UK/US/AU accents)
     ):
         """
         Initialize speech-to-text
 
         Args:
             model_size: Faster-Whisper model size
-            language: Language code (en-GB for UK accent)
+            language: Language code (en for English - works with all accents)
         """
         self.model_size = model_size
         self.language = language
