@@ -28,7 +28,7 @@ class SpeechToText:
     
     def __init__(
         self,
-        model_size: str = "tiny",
+        model_size: str = "base",  # Changed from "tiny" to "base" for better accuracy
         language: str = "en"  # English (works for UK/US/AU accents)
     ):
         """
@@ -36,6 +36,9 @@ class SpeechToText:
 
         Args:
             model_size: Faster-Whisper model size
+                       - tiny: Fastest, least accurate (~500MB)
+                       - base: Good balance (~500MB) ← RECOMMENDED
+                       - small: Better accuracy (~1GB)
             language: Language code (en for English - works with all accents)
         """
         self.model_size = model_size
@@ -46,7 +49,7 @@ class SpeechToText:
         try:
             from faster_whisper import WhisperModel
             self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
-            logger.info("✓ Faster-Whisper model loaded (optimized for UK accent)")
+            logger.info(f"✓ Faster-Whisper model loaded ({model_size}, optimized for UK accent)")
         except Exception as e:
             logger.error(f"Failed to load Faster-Whisper: {e}")
             raise
@@ -58,6 +61,56 @@ class SpeechToText:
         self.RATE = 16000
 
         self.pa = pyaudio.PyAudio()
+        
+        # Common command corrections (fix frequent misrecognitions)
+        self.command_corrections = {
+            "thank you very much": "pause",
+            "thanks very much": "pause",
+            "thank you": "pause",
+            "pols": "pause",
+            "pols.": "pause",
+            "pulse": "pause",
+            "paws": "pause",
+            "paws.": "pause",
+            "more": "more",
+            "stop": "stop",
+            "resume": "resume",
+            "play": "play",
+            "next": "next",
+            "previous": "previous",
+            "skip": "skip",
+            "louder": "louder",
+            "quieter": "quieter",
+            "volume up": "volume up",
+            "volume down": "volume down",
+        }
+    
+    def _post_process_transcription(self, text: str) -> str:
+        """
+        Post-process transcription to fix common errors
+        
+        Args:
+            text: Raw transcription
+            
+        Returns:
+            Corrected transcription
+        """
+        text_lower = text.lower().strip()
+        
+        # Check for exact matches first
+        if text_lower in self.command_corrections:
+            corrected = self.command_corrections[text_lower]
+            logger.info(f"Corrected: '{text}' → '{corrected}'")
+            return corrected
+        
+        # Check for partial matches
+        for pattern, correction in self.command_corrections.items():
+            if pattern in text_lower:
+                logger.info(f"Partial correction: '{text}' → '{correction}'")
+                return correction
+        
+        # No correction needed
+        return text
     
     def listen_for_command(
         self,
@@ -135,13 +188,17 @@ class SpeechToText:
             language=self.language,
             vad_filter=True  # Voice activity detection
         )
-        
+
         text = " ".join([segment.text for segment in segments]).strip()
-        logger.info(f"Transcribed: {text}")
+        logger.info(f"Raw transcription: '{text}'")
         
+        # Post-process to fix common errors
+        text = self._post_process_transcription(text)
+        logger.info(f"Transcribed: '{text}'")
+
         # Clean up temp file
         Path(temp_path).unlink()
-        
+
         return text
     
     def transcribe_file(self, audio_path: str) -> str:

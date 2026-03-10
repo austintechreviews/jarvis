@@ -64,7 +64,7 @@ class VoiceAssistant:
             raise
 
         try:
-            self.stt = SpeechToText(model_size=whisper_model, language="en")
+            self.stt = SpeechToText(model_size="base", language="en")  # Changed from "tiny" to "base"
         except Exception as e:
             logger.error(f"STT failed: {e}")
             raise

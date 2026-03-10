@@ -36,76 +36,119 @@ class AudioDucker:
         self.is_ducked = False
         self.pulse_available = self._check_pulseaudio()
         
+        logger.info(f"AudioDucker initialized: PulseAudio={self.pulse_available}, Level={ducking_level*100}%")
+        
     def _check_pulseaudio(self) -> bool:
         """Check if PulseAudio is available"""
         try:
             result = subprocess.run(
                 ["pactl", "info"],
                 capture_output=True,
+                text=True,
                 timeout=5
             )
-            return result.returncode == 0
-        except:
+            is_available = result.returncode == 0
+            logger.info(f"PulseAudio check: {'Available' if is_available else 'Not available'}")
+            return is_available
+        except Exception as e:
+            logger.warning(f"PulseAudio check failed: {str(e)}")
             return False
     
     def duck(self):
         """Reduce background audio volume"""
         if self.is_ducked:
+            logger.debug("Already ducked, skipping")
+            return
+        
+        if not self.pulse_available:
+            logger.debug("PulseAudio not available, skipping ducking")
             return
         
         try:
-            if self.pulse_available:
-                # Get current volume
-                result = subprocess.run(
-                    ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                
-                # Parse volume (format: "Volume: front-left: 65536 / 100%")
-                if "100%" in result.stdout or "65536" in result.stdout:
-                    self.original_volume = 1.0
-                elif "%" in result.stdout:
-                    vol_str = result.stdout.split("%")[0].split("/")[-1].strip()
-                    self.original_volume = float(vol_str) / 100.0
+            # Get current volume
+            result = subprocess.run(
+                ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                logger.warning(f"Failed to get volume: {result.stderr}")
+                return
+            
+            # Parse volume (format: "Volume: front-left: 65536 / 100%, front-right: 65536 / 100%")
+            volume_line = result.stdout
+            logger.debug(f"Volume output: {volume_line}")
+            
+            # Extract percentage
+            import re
+            match = re.search(r'(\d+)%', volume_line)
+            if match:
+                current_percent = int(match.group(1))
+                self.original_volume = current_percent / 100.0
+            else:
+                # Try to parse raw value
+                match = re.search(r'front-left: (\d+)', volume_line)
+                if match:
+                    raw_value = int(match.group(1))
+                    self.original_volume = raw_value / 65536.0
                 else:
                     self.original_volume = 1.0
-                
-                # Set reduced volume
-                ducked_vol = int(self.ducking_level * 65536)
-                subprocess.run(
-                    ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{ducked_vol}"],
-                    capture_output=True,
-                    timeout=5
-                )
-                
+            
+            logger.info(f"Current volume: {self.original_volume*100}%")
+            
+            # Calculate ducked volume
+            ducked_percent = int(self.ducking_level * 100)
+            ducked_raw = int(self.ducking_level * 65536)
+            
+            # Set reduced volume
+            result = subprocess.run(
+                ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{ducked_raw}"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
                 self.is_ducked = True
-                logger.debug(f"Audio ducked to {self.ducking_level * 100}%")
+                logger.info(f"✓ Audio ducked from {self.original_volume*100}% to {ducked_percent}%")
+            else:
+                logger.warning(f"Failed to set volume: {result.stderr}")
             
         except Exception as e:
-            logger.debug(f"Audio ducking failed: {str(e)}")
+            logger.error(f"Audio ducking error: {str(e)}", exc_info=True)
     
     def restore(self):
         """Restore original audio volume"""
         if not self.is_ducked:
+            logger.debug("Not ducked, skipping restore")
+            return
+        
+        if not self.pulse_available:
+            logger.debug("PulseAudio not available, skipping restore")
             return
         
         try:
-            if self.pulse_available:
-                # Restore original volume
-                original_vol = int(self.original_volume * 65536)
-                subprocess.run(
-                    ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{original_vol}"],
-                    capture_output=True,
-                    timeout=5
-                )
-                
+            # Restore original volume
+            original_raw = int(self.original_volume * 65536)
+            original_percent = int(self.original_volume * 100)
+            
+            result = subprocess.run(
+                ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{original_raw}"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
                 self.is_ducked = False
-                logger.debug(f"Audio restored to {self.original_volume * 100}%")
+                logger.info(f"✓ Audio restored to {original_percent}%")
+            else:
+                logger.warning(f"Failed to restore volume: {result.stderr}")
             
         except Exception as e:
-            logger.debug(f"Audio restore failed: {str(e)}")
+            logger.error(f"Audio restore error: {str(e)}", exc_info=True)
     
     def __enter__(self):
         """Context manager entry"""
