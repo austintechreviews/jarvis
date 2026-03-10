@@ -1231,9 +1231,65 @@ The browser is currently running and ready to use."""
         console.print(help_text)
 
 
+def check_onboarding_required() -> bool:
+    """Check if onboarding needs to run"""
+    status_file = Path.home() / "jarvis" / "config" / "onboarding_status.json"
+    
+    if not status_file.exists():
+        return True
+    
+    with open(status_file) as f:
+        status = json.load(f)
+    
+    return not status.get("completed", False)
+
+
+def launch_onboarding():
+    """Launch onboarding UI"""
+    import subprocess
+    import webbrowser
+    
+    console.print("\n[bold cyan]═══════════════════════════════════════[/bold cyan]")
+    console.print("[bold cyan]  First-time setup required[/bold cyan]")
+    console.print("[bold cyan]═══════════════════════════════════════[/bold cyan]\n")
+    console.print("Starting onboarding interface...")
+    console.print("[dim]This will open in your default browser[/dim]\n")
+    
+    # Start API server in background
+    api_script = Path(__file__).parent / "onboarding" / "api_server.py"
+    api_process = subprocess.Popen(
+        ["python", str(api_script)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    
+    # Wait for server to start
+    import time
+    time.sleep(3)
+    
+    # Open browser
+    webbrowser.open("http://localhost:5000")
+    
+    console.print("[yellow]✓ Onboarding opened in your browser[/yellow]")
+    console.print("[dim]Complete the setup, then return here[/dim]\n")
+    console.print("[dim]Press Enter when you've completed onboarding...[/dim]")
+    input()
+    
+    # Cleanup
+    api_process.terminate()
+    api_process.wait()
+    
+    console.print("[green]✓ Onboarding complete![/green]\n")
+
+
 def main():
-    """Entry point"""
+    """Entry point with onboarding check"""
     try:
+        # Check if onboarding needed
+        if check_onboarding_required():
+            launch_onboarding()
+        
+        # Start JARVIS normally
         jarvis = JARVIS()
         jarvis.run()
     except Exception as e:
