@@ -63,7 +63,26 @@ class WeatherPlugin(JARVISPlugin):
         return {
             "current": self.get_current_weather,
             "forecast": self.get_forecast,
-            "set_location": self.set_location
+            "set_location": self.set_location,
+            "time": self.get_time  # Added time tool
+        }
+    
+    def get_time(self) -> Dict:
+        """
+        Get current time
+        
+        Returns:
+            Current time information
+        """
+        from datetime import datetime
+        
+        now = datetime.now()
+        
+        return {
+            "success": True,
+            "time": now.strftime("%H:%M:%S"),
+            "date": now.strftime("%A, %B %d, %Y"),
+            "timezone": "Local"
         }
     
     def get_current_weather(self, location: str = None) -> Dict:

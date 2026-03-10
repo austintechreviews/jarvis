@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J.A.R.V.I.S - Futuristic Interface</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --aurora-1: #00D9FF;
+      --aurora-2: #00FFD1;
+      --aurora-3: #B066FF;
+      --aurora-4: #FF6B9D;
+      --aurora-5: #00FF88;
+      --glass-bg: rgba(10, 15, 30, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: radial-gradient(ellipse at 50% 50%, rgba(0, 217, 255, 0.15), transparent 70%),
+                  radial-gradient(ellipse at 80% 20%, rgba(176, 102, 255, 0.1), transparent 50%),
+                  linear-gradient(180deg, #000000 0%, #0a0f1e 100%);
+      animation: backgroundShift 20s ease infinite;
+    }
+
+    @keyframes backgroundShift {
+      0%, 100% { filter: hue-rotate(0deg); }
+      50% { filter: hue-rotate(30deg); }
+    }
+
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--aurora-1);
+      border-radius: 50%;
+      animation: float 15s infinite;
+      opacity: 0.6;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+      50% { transform: translate(var(--tx), var(--ty)) scale(1.5); opacity: 1; }
+    }
+
+    .glass-container {
+      backdrop-filter: blur(20px) saturate(180%);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 80px 1fr 350px;
+      grid-template-rows: 80px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .arc-reactor {
+      width: 50px;
+      height: 50px;
+      position: relative;
+      animation: reactorPulse 3s ease-in-out infinite;
+    }
+
+    .reactor-core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, var(--aurora-1), var(--aurora-3));
+      border-radius: 50%;
+      box-shadow: 0 0 30px var(--aurora-1), 0 0 60px var(--aurora-3), inset 0 0 10px #fff;
+      animation: corePulse 2s ease-in-out infinite;
+    }
+
+    .reactor-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      border: 2px solid var(--aurora-1);
+      border-radius: 50%;
+      animation: ringRotate 10s linear infinite;
+    }
+
+    @keyframes reactorPulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.5); }
+    }
+
+    @keyframes corePulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    @keyframes ringRotate {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 2px;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 50px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--aurora-5);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--aurora-5);
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .system-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .sidebar {
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .nav-item {
+      width: 100%;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--aurora-1), var(--aurora-3));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .nav-item:hover::before { opacity: 0.1; }
+    .nav-item.active {
+      background: rgba(0, 217, 255, 0.1);
+      border-color: var(--aurora-1);
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.1);
+    }
+    .nav-item.active::before { opacity: 0.2; }
+
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+
+    .main-content {
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow: hidden;
+    }
+
+    .voice-visualizer {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .voice-visualizer::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, var(--aurora-1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .voice-visualizer.active::before {
+      opacity: 0.2;
+      animation: voiceGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes voiceGlow {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    .visualizer-bar {
+      width: 8px;
+      height: 40px;
+      background: linear-gradient(180deg, var(--aurora-1), var(--aurora-3));
+      border-radius: 4px;
+      transition: height 0.1s ease;
+      box-shadow: 0 0 10px var(--aurora-1);
+      animation: barIdle 3s ease-in-out infinite;
+      animation-delay: calc(var(--i) * 0.1s);
+    }
+
+    .voice-visualizer.active .visualizer-bar {
+      animation: barActive 0.3s ease-in-out infinite;
+      animation-delay: calc(var(--i) * 0.05s);
+    }
+
+    @keyframes barIdle {
+      0%, 100% { height: 40px; opacity: 0.5; }
+      50% { height: 60px; opacity: 0.8; }
+    }
+
+    @keyframes barActive {
+      0%, 100% { height: 40px; }
+      50% { height: var(--height, 100px); }
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-right: 0.5rem;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 8px; }
+    .chat-messages::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--aurora-1), var(--aurora-3));
+      border-radius: 10px;
+      box-shadow: 0 0 10px var(--aurora-1);
+    }
+
+    .message {
+      display: flex;
+      gap: 1rem;
+      animation: messageSlide 0.3s ease;
+    }
+
+    @keyframes messageSlide {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--aurora-1), var(--aurora-3));
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .message.jarvis .message-avatar {
+      background: linear-gradient(135deg, var(--aurora-3), var(--aurora-4));
+      box-shadow: 0 0 20px rgba(176, 102, 255, 0.5);
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 1rem 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      position: relative;
+    }
+
+    .message.user .message-content {
+      background: rgba(0, 217, 255, 0.1);
+      border-color: rgba(0, 217, 255, 0.3);
+    }
+
+    .message.jarvis .message-content {
+      background: rgba(176, 102, 255, 0.1);
+      border-color: rgba(176, 102, 255, 0.3);
+    }
+
+    .message-text {
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.6;
+    }
+
+    .message-time {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 0.25rem;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 6px;
+      padding: 1rem;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--aurora-1);
+      border-radius: 50%;
+      animation: typingBounce 1.4s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    .input-area {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .input-container { flex: 1; position: relative; }
+
+    .chat-input {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .chat-input:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--aurora-1);
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .chat-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+    .voice-button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--aurora-1), var(--aurora-3));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .voice-button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transition: all 0.5s;
+    }
+
+    .voice-button:hover::before {
+      width: 100px;
+      height: 100px;
+    }
+
+    .voice-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 30px rgba(0, 217, 255, 0.8);
+    }
+
+    .voice-button.recording {
+      animation: recordingPulse 1s ease-in-out infinite;
+      background: linear-gradient(135deg, #ff4444, #ff6b9d);
+      box-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+    }
+
+    @keyframes recordingPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .right-panel {
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+
+    .panel-section { padding: 1.5rem; }
+
+    .panel-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel-title::before {
+      content: '';
+      width: 3px;
+      height: 12px;
+      background: linear-gradient(180deg, var(--aurora-1), var(--aurora-3));
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--aurora-1);
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label { color: rgba(255, 255, 255, 0.6); font-size: 0.875rem; }
+    .stat-value {
+      font-weight: 600;
+      color: var(--aurora-1);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      margin-top: 0.25rem;
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--aurora-1), var(--aurora-3));
+      border-radius: 2px;
+      transition: width 0.3s;
+      box-shadow: 0 0 10px var(--aurora-1);
+    }
+
+    .quick-action {
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .quick-action:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--aurora-1);
+      transform: translateX(5px);
+    }
+
+    .quick-action-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--aurora-1), var(--aurora-3));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .quick-action-text { flex: 1; }
+    .quick-action-title { font-weight: 500; margin-bottom: 2px; }
+    .quick-action-desc { font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); }
+
+    .plugin-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+    }
+
+    .plugin-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--aurora-2), var(--aurora-5));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .plugin-info { flex: 1; }
+    .plugin-name { font-weight: 500; font-size: 0.875rem; }
+    .plugin-status {
+      font-size: 0.75rem;
+      color: var(--aurora-5);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .plugin-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--aurora-5);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--aurora-5);
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .sidebar, .right-panel { display: none; }
+    }
+
+    .hidden { display: none; }
+    .fade-in { animation: fadeIn 0.5s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="background"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="app-container">
+    <div class="glass-container header">
+      <div class="logo">
+        <div class="arc-reactor">
+          <div class="reactor-core"></div>
+          <div class="reactor-ring"></div>
+        </div>
+        <div class="logo-text">J.A.R.V.I.S</div>
+      </div>
+      <div class="header-controls">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Online</span>
+        </div>
+        <div class="system-time" id="systemTime">00:00:00</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="glass-container nav-item active" data-view="chat">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="glass-container nav-item" data-view="plugins">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+      </div>
+      <div class="glass-container nav-item" data-view="settings">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m8.66-15.66l-4.24 4.24m-8.48 8.48l-4.24 4.24M23 12h-6m-6 0H1m15.66 8.66l-4.24-4.24m-8.48-8.48l-4.24-4.24"/></svg>
+      </div>
+      <div class="glass-container nav-item" data-view="voice">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="glass-container voice-visualizer" id="visualizer">
+        <div class="visualizer-bar" style="--i: 0"></div>
+        <div class="visualizer-bar" style="--i: 1"></div>
+        <div class="visualizer-bar" style="--i: 2"></div>
+        <div class="visualizer-bar" style="--i: 3"></div>
+        <div class="visualizer-bar" style="--i: 4"></div>
+        <div class="visualizer-bar" style="--i: 5"></div>
+        <div class="visualizer-bar" style="--i: 6"></div>
+        <div class="visualizer-bar" style="--i: 7"></div>
+        <div class="visualizer-bar" style="--i: 8"></div>
+        <div class="visualizer-bar" style="--i: 9"></div>
+        <div class="visualizer-bar" style="--i: 10"></div>
+        <div class="visualizer-bar" style="--i: 11"></div>
+        <div class="visualizer-bar" style="--i: 12"></div>
+        <div class="visualizer-bar" style="--i: 13"></div>
+        <div class="visualizer-bar" style="--i: 14"></div>
+      </div>
+
+      <div class="glass-container chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <div class="message jarvis">
+            <div class="message-avatar">J</div>
+            <div class="message-content">
+              <div class="message-text">Good evening, Sir. All systems are online and operating at peak efficiency.</div>
+              <div class="message-time">Just now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask JARVIS anything..."/>
+          </div>
+          <button class="voice-button" id="voiceButton">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="glass-container panel-section">
+        <div class="panel-title">System Status</div>
+        <div class="stat-item">
+          <div class="stat-label">CPU Usage</div>
+          <div class="stat-value">23%</div>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 23%"></div></div>
+        <div class="stat-item">
+          <div class="stat-label">Memory</div>
+          <div class="stat-value">4.2 GB</div>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 52%"></div></div>
+        <div class="stat-item">
+          <div class="stat-label">Network</div>
+          <div class="stat-value">125 Mbps</div>
+        </div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 78%"></div></div>
+      </div>
+
+      <div class="glass-container panel-section">
+        <div class="panel-title">Quick Actions</div>
+        <div class="quick-action">
+          <div class="quick-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="quick-action-text">
+            <div class="quick-action-title">Weather Report</div>
+            <div class="quick-action-desc">Get current weather</div>
+          </div>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="quick-action-text">
+            <div class="quick-action-title">Play Music</div>
+            <div class="quick-action-desc">Start Spotify</div>
+          </div>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="quick-action-text">
+            <div class="quick-action-title">Check Email</div>
+            <div class="quick-action-desc">3 unread messages</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-container panel-section">
+        <div class="panel-title">Active Plugins</div>
+        <div class="plugin-item">
+          <div class="plugin-icon">🎵</div>
+          <div class="plugin-info">
+            <div class="plugin-name">Spotify</div>
+            <div class="plugin-status">Connected</div>
+          </div>
+        </div>
+        <div class="plugin-item">
+          <div class="plugin-icon">🌤️</div>
+          <div class="plugin-info">
+            <div class="plugin-name">Weather</div>
+            <div class="plugin-status">Active</div>
+          </div>
+        </div>
+        <div class="plugin-item">
+          <div class="plugin-icon">📧</div>
+          <div class="plugin-info">
+            <div class="plugin-name">Email</div>
+            <div class="plugin-status">Synced</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function createParticles() {
+      const container = document.getElementById('particles');
+      const particleCount = 50;
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
+        particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        const colors = ['var(--aurora-1)', 'var(--aurora-2)', 'var(--aurora-3)', 'var(--aurora-5)'];
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        container.appendChild(particle);
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+      document.getElementById('systemTime').textContent = timeString;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    const visualizer = document.getElementById('visualizer');
+    const voiceButton = document.getElementById('voiceButton');
+    let isRecording = false;
+
+    voiceButton.addEventListener('click', () => {
+      isRecording = !isRecording;
+      if (isRecording) {
+        visualizer.classList.add('active');
+        voiceButton.classList.add('recording');
+        startVoiceRecording();
+      } else {
+        visualizer.classList.remove('active');
+        voiceButton.classList.remove('recording');
+        stopVoiceRecording();
+      }
+    });
+
+    function startVoiceRecording() {
+      console.log('Voice recording started');
+      const bars = document.querySelectorAll('.visualizer-bar');
+      bars.forEach(bar => {
+        setInterval(() => {
+          const height = Math.random() * 80 + 40;
+          bar.style.setProperty('--height', height + 'px');
+        }, 200);
+      });
+    }
+
+    function stopVoiceRecording() {
+      console.log('Voice recording stopped');
+    }
+
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && chatInput.value.trim()) {
+        sendMessage(chatInput.value.trim());
+        chatInput.value = '';
+      }
+    });
+
+    function sendMessage(text) {
+      addMessage('user', text);
+      setTimeout(() => {
+        addTypingIndicator();
+        setTimeout(() => {
+          removeTypingIndicator();
+          addMessage('jarvis', getJarvisResponse(text));
+        }, 2000);
+      }, 500);
+    }
+
+    function addMessage(type, text) {
+      const message = document.createElement('div');
+      message.className = `message ${type} fade-in`;
+      const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      message.innerHTML = `
+        <div class="message-avatar">${type === 'user' ? 'U' : 'J'}</div>
+        <div class="message-content">
+          <div class="message-text">${text}</div>
+          <div class="message-time">${time}</div>
+        </div>
+      `;
+      chatMessages.appendChild(message);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+      const typing = document.createElement('div');
+      typing.className = 'message jarvis typing-indicator-message';
+      typing.id = 'typing-indicator';
+      typing.innerHTML = `
+        <div class="message-avatar">J</div>
+        <div class="message-content">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      chatMessages.appendChild(typing);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
+
+    function getJarvisResponse(input) {
+      const responses = {
+        'hello': 'Good to see you, Sir. How may I assist you today?',
+        'hi': 'Greetings. What can I do for you?',
+        'weather': 'The current weather in your location is 72°F with clear skies. Perfect day, Sir.',
+        'time': `The current time is ${new Date().toLocaleTimeString('en-US')}.`,
+        'music': 'Accessing Spotify. What would you like to listen to?',
+        'email': 'You have 3 unread emails. Would you like me to read them?',
+      };
+      const lowerInput = input.toLowerCase();
+      for (const [key, response] of Object.entries(responses)) {
+        if (lowerInput.includes(key)) return response;
+      }
+      return "I'm processing your request. One moment please.";
+    }
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    createParticles();
+  </script>
+</body>
+</html>

@@ -199,17 +199,20 @@ Correct format:
 
 Rules:
 1. Use EXACT tool names from the list above (include plugin prefix, e.g., "spotify.play" not just "spotify")
-2. For Spotify:
-   - "start/play music" → spotify.play or spotify.search_and_play
+2. For TIME queries ("what time", "time is it", "current time") → use weather.time
+3. For DATE queries ("what day", "what date", "today") → use weather.time
+4. For Spotify:
+   - "play" → spotify.play or spotify.search_and_play
    - "pause/stop" → spotify.pause
    - "what's playing" → spotify.now_playing
    - "skip/next" → spotify.next
    - "previous" → spotify.previous
    - "volume" → spotify.set_volume
-3. For Weather:
-   - Any weather query → weather.current
-4. Extract parameter values from the command
-5. If no tool matches, use "none"
+5. For Weather:
+   - "weather" → weather.current
+   - "forecast" → weather.forecast
+6. Extract parameter values from the command
+7. If no tool matches, use "none"
 
 Respond with ONLY the JSON object:"""
 
@@ -462,22 +465,32 @@ class LLMToolExecutor:
                 filtered_params[param_name] = parameters[param_name]
         
         try:
-            # Execute tool with validated parameters
-            if filtered_params:
-                result = tool_func(**filtered_params)
-            else:
-                # Call without parameters if none match
+            # Special handling for weather.time (no parameters needed)
+            if tool_name == "weather.time":
                 result = tool_func()
-            
+            # Validate parameters against function signature for other tools
+            else:
+                # Execute tool with validated parameters
+                if filtered_params:
+                    result = tool_func(**filtered_params)
+                else:
+                    # Call without parameters if none match
+                    result = tool_func()
+
             # Format result
             if isinstance(result, dict):
                 if result.get("success"):
+                    # Format time response nicely
+                    if tool_name == "weather.time":
+                        time_str = result.get("time", "")
+                        date_str = result.get("date", "")
+                        return f"The current time is {time_str}. It's {date_str}."
                     return result.get("message", str(result))
                 else:
                     return f"Error: {result.get('message', 'Unknown error')}"
             else:
                 return str(result)
-        
+
         except TypeError as e:
             # Parameter mismatch - try calling without parameters
             logger.warning(f"Tool parameter error, trying without params: {str(e)}")
