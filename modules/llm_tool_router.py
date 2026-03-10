@@ -306,26 +306,36 @@ JSON response:"""
         
         response_str = str(response)
         
-        # Try to find JSON object
-        json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_str, re.DOTALL)
+        # Try multiple JSON extraction patterns
+        patterns = [
+            r'\{[^{}]*\}',  # Simple object
+            r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}',  # Nested objects
+            r'```json\s*({.*?})\s*```',  # Markdown code block
+            r'({.*?"tool".*?})',  # Must contain "tool" key
+        ]
         
-        if json_match:
-            try:
-                # Clean up common issues
-                json_str = json_match.group()
-                json_str = json_str.replace("'", '"')  # Single quotes to double
+        for pattern in patterns:
+            json_match = re.search(pattern, response_str, re.DOTALL)
+            if json_match:
+                try:
+                    json_str = json_match.group()
+                    # Clean up common issues
+                    json_str = json_str.replace("'", '"')  # Single to double quotes
+                    json_str = re.sub(r',\s*}', '}', json_str)  # Remove trailing commas
+                    json_str = re.sub(r'}\s*{', '},{', json_str)  # Fix object separation
+                    
+                    data = json.loads(json_str)
+                    
+                    # Validate structure
+                    if "tool" in data:
+                        return data
                 
-                # Parse JSON
-                data = json.loads(json_str)
-                
-                # Validate structure
-                if "tool" in data:
-                    return data
-            
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parse error: {str(e)}")
-                logger.debug(f"Failed JSON: {json_str[:200]}")
+                except json.JSONDecodeError as e:
+                    logger.debug(f"Pattern {pattern} failed: {str(e)[:100]}")
+                    continue
         
+        logger.error(f"JSON parse error: Could not extract valid JSON")
+        logger.debug(f"Response: {response_str[:500]}")
         return None
 
 

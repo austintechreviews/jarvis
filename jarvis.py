@@ -567,6 +567,11 @@ For tool usage, output JSON on a separate line:
         # Default to LLM with tool calling
         return {"tool": "llm", "reason": "Complex request"}
     
+    def execute_with_llm(self, user_input: str) -> str:
+        """Execute command conversationally with LLM (no tools)"""
+        system_prompt = self.create_system_prompt()
+        return self.llm_chat(user_input, system_prompt)
+    
     def _try_plugin_tools(self, user_input: str) -> Optional[str]:
         """
         Check if any plugin tool should handle this command
