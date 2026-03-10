@@ -192,23 +192,26 @@ class LLMToolRouter:
 "{user_input}"
 
 # YOUR TASK
-Analyze the command and respond with ONLY a JSON object (no markdown, no explanation):
+Analyze the command and respond with ONLY a JSON object. No markdown, no code blocks, no explanation.
 
-{{
-  "tool": "exact_tool_name",
-  "parameters": {{"param_name": "value"}},
-  "reasoning": "brief explanation"
-}}
+Correct format:
+{{"tool": "spotify.play", "parameters": {{"query": "music"}}, "reasoning": "User wants to play music"}}
 
 Rules:
-- Choose the MOST SPECIFIC tool that matches the intent
-- If multiple tools could work, prefer plugin tools over core tools
-- Extract parameter values from the user command
-- For Spotify: "play" = spotify.play(), "pause/stop" = spotify.pause(), "next" = spotify.next()
-- For weather: any weather query = weather.current or weather.forecast
-- If no tool matches, use "none"
+1. Use EXACT tool names from the list above (include plugin prefix, e.g., "spotify.play" not just "spotify")
+2. For Spotify:
+   - "start/play music" → spotify.play or spotify.search_and_play
+   - "pause/stop" → spotify.pause
+   - "what's playing" → spotify.now_playing
+   - "skip/next" → spotify.next
+   - "previous" → spotify.previous
+   - "volume" → spotify.set_volume
+3. For Weather:
+   - Any weather query → weather.current
+4. Extract parameter values from the command
+5. If no tool matches, use "none"
 
-JSON response:"""
+Respond with ONLY the JSON object:"""
 
         try:
             # Get LLM response - handle different client types
