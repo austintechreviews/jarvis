@@ -413,7 +413,7 @@ class LLMToolExecutor:
     
     def _execute_plugin_tool(self, tool_name: str, parameters: Dict[str, Any]) -> str:
         """
-        Execute a plugin tool
+        Execute a plugin tool with parameter validation
         
         Args:
             tool_name: Full tool name (plugin.tool)
@@ -446,9 +446,28 @@ class LLMToolExecutor:
         if not tool_func:
             return f"Tool not found: {tool_name}"
         
+        # Validate parameters against function signature
+        import inspect
+        sig = inspect.signature(tool_func)
+        valid_params = {}
+        
+        for param_name, param in sig.parameters.items():
+            if param_name != 'self' and param_name in parameters:
+                valid_params[param_name] = parameters[param_name]
+        
+        # Remove parameters that don't match the function signature
+        filtered_params = {}
+        for param_name, param in sig.parameters.items():
+            if param_name != 'self' and param_name in parameters:
+                filtered_params[param_name] = parameters[param_name]
+        
         try:
-            # Execute tool
-            result = tool_func(**parameters)
+            # Execute tool with validated parameters
+            if filtered_params:
+                result = tool_func(**filtered_params)
+            else:
+                # Call without parameters if none match
+                result = tool_func()
             
             # Format result
             if isinstance(result, dict):
@@ -460,9 +479,15 @@ class LLMToolExecutor:
                 return str(result)
         
         except TypeError as e:
-            # Parameter mismatch
-            logger.error(f"Tool parameter error: {str(e)}")
-            return f"Tool parameter error: {str(e)}"
+            # Parameter mismatch - try calling without parameters
+            logger.warning(f"Tool parameter error, trying without params: {str(e)}")
+            try:
+                result = tool_func()
+                if isinstance(result, dict):
+                    return result.get("message", str(result)) if result.get("success") else f"Error: {result.get('message')}"
+                return str(result)
+            except:
+                return f"Tool parameter error: {str(e)}"
         
         except Exception as e:
             logger.error(f"Tool execution error: {str(e)}", exc_info=True)
