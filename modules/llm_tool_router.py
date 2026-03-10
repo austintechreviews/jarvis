@@ -211,8 +211,16 @@ Rules:
 JSON response:"""
 
         try:
-            # Get LLM response
-            response = self.llm.chat(prompt, display=False, stream=False)
+            # Get LLM response - handle different client types
+            if hasattr(self.llm, 'chat'):
+                # open-interpreter or similar
+                response = self.llm.chat(prompt, display=False, stream=False)
+            elif hasattr(self.llm, 'llm_chat'):
+                # JARVIS instance fallback
+                response = self.llm.llm_chat(prompt, system_prompt="")
+            else:
+                logger.error("LLM client has no chat method")
+                return {"tool": "none", "parameters": {}, "reasoning": "No LLM available"}
             
             # Extract JSON from response
             routing = self._extract_json(response)

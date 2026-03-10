@@ -159,8 +159,18 @@ class JARVIS:
         
         # LLM Tool Router (after plugins are loaded)
         try:
+            # Try to import open-interpreter, use fallback if not available
+            try:
+                import interpreter as interpreter_module
+                llm_client = interpreter_module
+                console.print("[dim]Using open-interpreter for LLM routing[/dim]")
+            except ImportError:
+                # Fallback: use built-in llm_chat via lambda
+                llm_client = self  # We'll handle this in LLMToolRouter
+                console.print("[dim]Using built-in LLM for routing[/dim]")
+            
             self.llm_router = LLMToolRouter(
-                llm_client=interpreter,
+                llm_client=llm_client,
                 plugin_manager=self.plugin_manager
             )
             self.tool_executor = LLMToolExecutor(jarvis_instance=self)
